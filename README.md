@@ -3,7 +3,7 @@
 [![Python CI](https://github.com/shitcoding/python-project-lvl3/actions/workflows/pyci.yml/badge.svg)](https://github.com/shitcoding/python-project-lvl3/actions/workflows/pyci.yml)
 [![Actions Status](https://github.com/shitcoding/python-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/shitcoding/python-project-lvl3/actions)
 ---
-# `page-downloader` script
+# `page-loader` script
 Downloads a target web page with all its resourses and saves it to specified directory (default: current directory).
 
 ## Installation
