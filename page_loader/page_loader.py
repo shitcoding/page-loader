@@ -4,6 +4,8 @@ import requests
 from slugify import slugify
 from urllib.parse import urlparse
 
+from requests.exceptions import MissingSchema, ConnectionError
+
 
 def make_slug(url):
     """
@@ -27,39 +29,119 @@ def make_slug(url):
     return slug
 
 
-def save_img(url, dir_path):
-    """Saves image to specified directory."""
+def save_file(url, dir_path):
+    """
+    Downloads the file from target url to specified directory.
+
+    Args:
+        url: url of the target file.
+        dir_path: path to the target directory to save the file.
+
+    Returns:
+        file_path: absolute path of the downloaded file.
+    """
     head, ext = os.path.splitext(url)
-    img_path = os.path.join(dir_path, (make_slug(head) + ext))
-    img_data = requests.get(url).content
-    with open(img_path, "wb") as f:
-        f.write(img_data)
-    return img_path
+    file_path = os.path.join(dir_path, (make_slug(head) + ext))
+    file_data = requests.get(url).content
+    with open(file_path, "wb") as f:
+        f.write(file_data)
+    return file_path
+
+
+def download_local_assets(soup, tag, attr, url, dir_path, page_slug):
+    """
+    Downloads the local assets from the BeautifulSoup object
+    of the target html page.
+    Saves assets to target directory and replaces `src`
+    attribute with absolute path to downloaded files.
+
+    Args:
+        soup (BeautifulSoup):
+            BeautifulSoup object of the target html page.
+        tag (str):
+            html tag of assets that need to be downloaded.
+        attr (str):
+            tag attribute with link to asset
+            (`src` for <img> and <script>, `href` for <link>).
+        url (str):
+            URL of the target web page.
+        dir_path (str):
+            Path to the directory with target saved page.
+        page_slug (str):
+            Slug string made from target page url.
+
+    Returns:
+        new_soup (BeautifulSoup):
+            BeautifulSoup object with `src` attribute replaced
+            with absolute path to downloaded assets.
+    """
+    # Finding all elements with target tag and non-empty url attr
+    assets = soup.find_all(tag, attrs={attr: True})
+    # Creating a directory for assets if found assets with target tag
+    if assets:
+        assets_dir_name = f'{page_slug}_files'
+        assets_dir_path = os.path.join(dir_path, assets_dir_name)
+        os.makedirs(assets_dir_path, exist_ok=True)
+    # Get scheme and host of the page to download assets with relative url
+    scheme, host = urlparse(url).scheme, urlparse(url).netloc
+    for a in assets:
+        asset_url = urlparse(a.attrs.get(attr))
+        # Downloading an asset it is local to the page's domain
+        if (not asset_url.scheme and not asset_url.netloc) \
+                or (scheme == asset_url.scheme and host == asset_url.netloc):
+            # Modifying relative url to make it absolute
+            asset_abs_url = asset_url._replace(
+                scheme=scheme,
+                netloc=host
+            ).geturl()
+            # save_file saves the asset and returns its' path
+            asset_path = save_file(
+                asset_abs_url.split('?')[0],  # remove url parameters
+                assets_dir_path
+            )
+            # Replacing original asset url with path to downloaded file
+            a.attrs[attr] = f'{assets_dir_name}/{os.path.basename(asset_path)}'
+    return soup
 
 
 def download(url, dir_path):
-    """Downloads a web page by url and
-    saves html file to specified directory.
-    Returns full path to saved html file."""
-    # Get scheme and host for downloading assets with relative url
-    scheme, host = urlparse(url).scheme, urlparse(url).netloc
-    page_path = os.path.join(dir_path, make_slug(url)) + ".html"
-    r = requests.get(url)
-    soup = BeautifulSoup(r.content, "html.parser")
-    imgs = soup.find_all("img")  # find all `img` tags on the page
-    if imgs:
-        files_dir_name = f"{make_slug(url)}_files"  # create assets dir
-        files_dir_path = os.path.join(dir_path, files_dir_name)
-        os.makedirs(files_dir_path, exist_ok=True)
-        for img in imgs:
-            img_url = urlparse(img.attrs["src"])
-            # Checking if image is local to the page's domain
-            if not (img_url.scheme and img_url.netloc):
-                img_full_url = img_url._replace(scheme=scheme, netloc=host).geturl()
-                img_path = save_img(img_full_url, files_dir_path)
-                # Replacing img url with saved img path in html
-                img.attrs["src"] = f"{files_dir_name}/{os.path.basename(img_path)}"
+    """
+    Downloads a web page and its' local assets, replaces assets URLs
+    with absolute path to downloaded files in output HTML file and
+    saves the resulting html file to specified directory.
 
-    with open(page_path, "w") as f:
+    Args:
+        url (str):
+            URL of the target web page.
+        dir_path (str):
+            Path to the directory to save page.
+
+    Returns:
+        output_html_path (str):
+            Absolute path to saved html file.
+    """
+    print(f'[>] Starting download of {url} page to {dir_path}...')
+    page_slug = make_slug(url)
+    output_html_path = os.path.join(dir_path, page_slug) + ".html"
+    print('[>] Retrieving html content from the target page...')
+    try:
+        r = requests.get(url)
+    except MissingSchema:
+        return f"Can't reach {url}: URL is incorrect"
+    except ConnectionError:
+        return f"Can't reach {url}: URL is incorrect or website is unavailable"
+    soup = BeautifulSoup(r.content, "html.parser")
+
+    print('[>] Downloading local assets from the target page...')
+    for tag, attr in (
+            ('img', 'src'),
+            ('script', 'src'),
+            ('link', 'href'),
+    ):
+        soup = download_local_assets(soup, tag, attr, url, dir_path, page_slug)
+
+    with open(output_html_path, "w") as f:
         f.write(soup.prettify())
-    return page_path
+    print('[+] Target page downloaded succesfully!')
+    print('\nPath to downloaded page:')
+    return output_html_path
