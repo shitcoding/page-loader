@@ -1,19 +1,29 @@
 from bs4 import BeautifulSoup
 import os
-import re
 import requests
+from slugify import slugify
 from urllib.parse import urlparse
 
 
-def slugify(url):
-    return re.sub("[./_:]", "-", url)
-
-
 def make_slug(url):
-    """Returns filename slug string made from input url."""
-    head, _ = os.path.splitext(url)
-    u = urlparse(head)
-    slug = slugify(u.netloc + u.path.rstrip("/"))
+    """
+    Returns filename slug string made from input url.
+
+    Args:
+        url (str):
+            URL string.
+
+    Returns:
+        slug (str):
+            Slug made from URL (lowercase letters, all symbols are
+            replaced with dash).
+    """
+    try:
+        u = urlparse(url)
+    except AttributeError:
+        print('Invalid url')
+    # stripping the extension from page url using os.path.splitext()
+    slug = slugify(u.netloc + os.path.splitext(u.path)[0])
     return slug
 
 
