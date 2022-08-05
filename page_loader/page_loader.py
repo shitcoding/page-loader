@@ -1,10 +1,15 @@
 from bs4 import BeautifulSoup
+import logging
 import os
 import requests
 from slugify import slugify
 from urllib.parse import urlparse
 
 from requests.exceptions import MissingSchema, ConnectionError
+
+
+class LoaderError(Exception):
+    pass
 
 
 def make_slug(url):
@@ -22,8 +27,9 @@ def make_slug(url):
     """
     try:
         u = urlparse(url)
-    except AttributeError:
-        print('Invalid url')
+    except AttributeError as e:
+        logging.error(f'{url} is invalid url')
+        raise LoaderError from e
     # stripping the extension from page url using os.path.splitext()
     slug = slugify(u.netloc + os.path.splitext(u.path)[0])
     return slug
@@ -120,19 +126,18 @@ def download(url, dir_path):
         output_html_path (str):
             Absolute path to saved html file.
     """
-    print(f'[>] Starting download of {url} page to {dir_path}...')
     page_slug = make_slug(url)
     output_html_path = os.path.join(dir_path, page_slug) + ".html"
-    print('[>] Retrieving html content from the target page...')
     try:
         r = requests.get(url)
-    except MissingSchema:
-        return f"Can't reach {url}: URL is incorrect"
-    except ConnectionError:
-        return f"Can't reach {url}: URL is incorrect or website is unavailable"
+    except MissingSchema as e:
+        logging.error(f"Can't reach {url}: URL is incorrect")
+        raise LoaderError from e
+    except ConnectionError as e:
+        logging.error(f"Can't reach {url}: URL is incorrect or website is unavailable")
+        raise LoaderError from e
     soup = BeautifulSoup(r.content, "html.parser")
 
-    print('[>] Downloading local assets from the target page...')
     for tag, attr in (
             ('img', 'src'),
             ('script', 'src'),
@@ -142,6 +147,4 @@ def download(url, dir_path):
 
     with open(output_html_path, "w") as f:
         f.write(soup.prettify())
-    print('[+] Target page downloaded succesfully!')
-    print('\nPath to downloaded page:')
     return output_html_path
