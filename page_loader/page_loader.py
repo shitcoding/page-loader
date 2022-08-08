@@ -134,7 +134,7 @@ def download(url, dir_path):
         logging.error(f"Can't reach {url}: URL is incorrect")
         raise LoaderError from e
     except ConnectionError as e:
-        logging.error(f"Can't reach {url}: URL is incorrect or website is unavailable")
+        logging.error(f"Can't reach {url}: URL is incorrect or website is down")
         raise LoaderError from e
     soup = BeautifulSoup(r.content, "html.parser")
 
