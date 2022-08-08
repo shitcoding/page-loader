@@ -12,6 +12,7 @@ python = "^3.8"
 requests = "^2.27.1"
 bs4 = "^0.0.1"
 python-slugify = "^6.1.2"
+progress = "^1.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0"
