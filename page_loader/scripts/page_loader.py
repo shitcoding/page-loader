@@ -7,14 +7,21 @@ from page_loader import cli, page_loader
 
 
 def main():
-    logging.basicConfig(filename='page_loader.log', level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[
+            logging.FileHandler('page_loader.log'),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
     try:
         url = cli.args.url
         output = cli.args.output
-        logging.info(f'Starting download of {url} page to {output}...')
         file_path = page_loader.download(url, output)
-        logging.info(f'Page {url} succesfully saved to {file_path}')
-        print(file_path)
+        logging.info(f'requested url: {url}')
+        logging.info(f'output path: {output}')
+
+        logging.info(f"Page was downloaded as '{file_path}'")
     except page_loader.LoaderError:
         sys.exit(1)
     sys.exit()
