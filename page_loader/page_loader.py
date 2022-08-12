@@ -135,12 +135,22 @@ def download(url, dir_path):
     output_html_path = os.path.join(dir_path, page_slug) + ".html"
     try:
         r = requests.get(url)
+        # Target page doesn't exist and returns 404 status code
+        if r.status_code == 404:
+            print('\n')
+            logging.error(f"Can't reach {url}: page doesn't exist")
+            raise LoaderError
+
+    # Catching exceptions
     except MissingSchema as e:
+        print('\n')
         logging.error(f"Can't reach {url}: URL is incorrect")
         raise LoaderError from e
     except ConnectionError as e:
+        print('\n')
         logging.error(f"Can't reach {url}: URL is incorrect or website is down")
         raise LoaderError from e
+
     soup = BeautifulSoup(r.content, "html.parser")
 
     for tag, attr in (
