@@ -130,6 +130,11 @@ def download(url, dir_path):
         output_html_path (str):
             Absolute path to saved html file.
     """
+    # Throw exception if dir_path doesn't exist.
+    if not os.path.exists(dir_path):
+        print('\n')
+        logging.error(f"Output directory {dir_path} doesn't exist")
+        raise LoaderError
     page_slug = make_slug(url)
     output_html_path = os.path.join(dir_path, page_slug) + ".html"
     try:
