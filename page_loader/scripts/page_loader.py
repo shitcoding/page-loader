@@ -22,8 +22,8 @@ def main():
         logging.info(f'output path: {output}')
 
         with IncrementalBar('Downloading:', max=4) as bar:
+            file_path = page_loader.download(url, output)
             for i in range(4):
-                file_path = page_loader.download(url, output)
                 bar.next()
 
         logging.info(f"Page was downloaded as '{file_path}'")
