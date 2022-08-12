@@ -48,6 +48,9 @@ def save_file(url, dir_path):
         file_path: absolute path of the downloaded file.
     """
     head, ext = os.path.splitext(url)
+    # if url have no extension, save file as .html
+    if not ext:
+        ext = '.html'
     file_path = os.path.join(dir_path, (make_slug(head) + ext))
     file_data = requests.get(url).content
     with open(file_path, "wb") as f:
