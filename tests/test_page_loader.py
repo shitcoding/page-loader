@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 import pytest
 import requests
-import requests_mock
 import tempfile
 
 from page_loader import download, LoaderError
@@ -83,7 +82,6 @@ def test_download_page(fixture_page, expected_saved_page, requests_mock):
         saved_assets_dir = f'{output_path.rstrip(".html")}_files'
         assert os.path.exists(saved_assets_dir)
 
-
         # Checking that saved assets are the same as expected
         cmp = dircmp(MOCK_ASSETS_DIR, saved_assets_dir)
         assert not cmp.diff_files
@@ -95,7 +93,7 @@ def test_download_incorrect_url():
     """
     with pytest.raises(LoaderError):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = download(
+            download(
                 'incorrect_url',
                 tmpdir
             )
@@ -112,7 +110,7 @@ def test_download_site_unavailable(requests_mock):
     )
     with pytest.raises(LoaderError):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = download(
+            download(
                 TARGET_URL,
                 tmpdir
             )
@@ -131,7 +129,7 @@ def test_download_non_existent_page(requests_mock):
 
     with pytest.raises(LoaderError):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = download(
+            download(
                 TARGET_URL,
                 tmpdir
             )
@@ -150,7 +148,7 @@ def test_download_server_error(requests_mock):
 
     with pytest.raises(LoaderError):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = download(
+            download(
                 TARGET_URL,
                 tmpdir
             )
@@ -162,7 +160,7 @@ def test_download_to_non_existing_dir():
     """
     with pytest.raises(LoaderError):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = download(
+            download(
                 TARGET_URL,
                 Path(tmpdir) / 'non_existent_dir'
             )
