@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from bs4.formatter import HTMLFormatter
 import logging
 import os
 import requests
@@ -100,6 +101,7 @@ def download_local_assets(soup, tag, attr, url, dir_path, page_slug):
                 scheme=scheme,
                 netloc=host
             ).geturl()
+
             # save_file saves the asset and returns its' path
             asset_path = save_file(
                 asset_abs_url.split('?')[0],  # remove url parameters
@@ -146,5 +148,6 @@ def download(url, dir_path):
         soup = download_local_assets(soup, tag, attr, url, dir_path, page_slug)
 
     with open(output_html_path, "w") as f:
-        f.write(soup.prettify())
+        formatter = HTMLFormatter(indent=4)
+        f.write(soup.prettify(formatter=formatter))
     return output_html_path
