@@ -154,3 +154,15 @@ def test_download_server_error(requests_mock):
                 TARGET_URL,
                 tmpdir
             )
+
+
+def test_download_to_non_existing_dir():
+    """
+    Downloading to non-existent directory should raise an exception.
+    """
+    with pytest.raises(LoaderError):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = download(
+                TARGET_URL,
+                Path(tmpdir) / 'non_existent_dir'
+            )
