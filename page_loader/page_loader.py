@@ -135,10 +135,15 @@ def download(url, dir_path):
     output_html_path = os.path.join(dir_path, page_slug) + ".html"
     try:
         r = requests.get(url)
-        # Target page doesn't exist and returns 404 status code
+        # Raise LoaderError exception if target page doesn't exist
+        # and returns 404 status code.
         if r.status_code == 404:
             print('\n')
             logging.error(f"Can't reach {url}: page doesn't exist")
+            raise LoaderError
+        if r.status_code == 500:
+            print('\n')
+            logging.error(f"Can't reach {url}: Internal server error")
             raise LoaderError
 
     # Catching exceptions

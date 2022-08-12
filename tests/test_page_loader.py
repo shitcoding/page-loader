@@ -120,13 +120,32 @@ def test_download_site_unavailable(requests_mock):
 
 def test_download_non_existent_page(requests_mock):
     """
-    Website returning 404 status code.
+    Website returning 404 status code should raise an exception.
     """
     # Mocking the request to target page
     requests_mock.get(
         TARGET_URL,
         text='This page does not exist!',
         status_code=404,
+    )
+
+    with pytest.raises(LoaderError):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = download(
+                TARGET_URL,
+                tmpdir
+            )
+
+
+def test_download_server_error(requests_mock):
+    """
+    Website returning 500 status code should raise an exception.
+    """
+    # Mocking the request to target page
+    requests_mock.get(
+        TARGET_URL,
+        text='Internal server error',
+        status_code=500,
     )
 
     with pytest.raises(LoaderError):
