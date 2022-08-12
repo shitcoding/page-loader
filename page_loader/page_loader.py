@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from bs4.formatter import HTMLFormatter
 import logging
 import os
 import requests
