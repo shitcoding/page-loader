@@ -2,10 +2,11 @@ from filecmp import dircmp
 import os
 from pathlib import Path
 import pytest
+import requests
 import requests_mock
 import tempfile
 
-from page_loader import download
+from page_loader import download, LoaderError
 
 
 def get_path(fixture_filename):
@@ -55,14 +56,14 @@ def test_download_page(fixture_page, expected_saved_page, requests_mock):
     # Mocking the request to target page
     requests_mock.get(
         TARGET_URL,
-        text=fixture_page
+        text=fixture_page,
     )
 
     # Mocking the requests to target page assets
     for rel_url, filename in MOCK_ASSETS_FILENAMES:
         requests_mock.get(
             f'{TARGET_URL}{rel_url}',
-            content=read_bin_fixture(MOCK_ASSETS_DIR / filename)
+            content=read_bin_fixture(MOCK_ASSETS_DIR / filename),
         )
 
     # Saving target page to temporary directory as html file
@@ -86,3 +87,51 @@ def test_download_page(fixture_page, expected_saved_page, requests_mock):
         # Checking that saved assets are the same as expected
         cmp = dircmp(MOCK_ASSETS_DIR, saved_assets_dir)
         assert not cmp.diff_files
+
+
+def test_download_incorrect_url():
+    """
+    Downloading from incorrect url should raise LoaderError exception.
+    """
+    with pytest.raises(LoaderError):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = download(
+                'incorrect_url',
+                tmpdir
+            )
+
+
+def test_download_site_unavailable(requests_mock):
+    """
+    Downloading from not responding website should raise an exception.
+    """
+    # Mocking the request to target page
+    requests_mock.get(
+        TARGET_URL,
+        exc=requests.exceptions.ConnectTimeout,
+    )
+    with pytest.raises(LoaderError):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = download(
+                TARGET_URL,
+                tmpdir
+            )
+
+
+def test_download_non_existent_page(requests_mock):
+    """
+    Website returning 404 status code.
+    """
+    # Mocking the request to target page
+    requests_mock.get(
+        TARGET_URL,
+        text='This page does not exist!',
+        status_code=404,
+    )
+
+    with pytest.raises(LoaderError):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = download(
+                TARGET_URL,
+                tmpdir
+            )
