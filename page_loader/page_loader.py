@@ -135,15 +135,11 @@ def download(url, dir_path):
     output_html_path = os.path.join(dir_path, page_slug) + ".html"
     try:
         r = requests.get(url)
-        # Raise LoaderError exception if target page doesn't exist
-        # and returns 404 status code.
-        if r.status_code == 404:
+        # Raise LoaderError exception if server returns
+        # status code 404 or 500.
+        if r.status_code == 404 or r.status_code == 500:
             print('\n')
-            logging.error(f"Can't reach {url}: page doesn't exist")
-            raise LoaderError
-        if r.status_code == 500:
-            print('\n')
-            logging.error(f"Can't reach {url}: Internal server error")
+            logging.error(f"Can't reach {url}: status code {r.status_code}")
             raise LoaderError
 
     # Catching exceptions
@@ -166,6 +162,5 @@ def download(url, dir_path):
         soup = download_local_assets(soup, tag, attr, url, dir_path, page_slug)
 
     with open(output_html_path, "w") as f:
-        formatter = HTMLFormatter(indent=4)
-        f.write(soup.prettify(formatter=formatter))
+        f.write(soup.prettify())
     return output_html_path
